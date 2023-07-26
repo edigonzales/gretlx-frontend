@@ -1,0 +1,10 @@
+/*
+ * This file has been created by the Vaadin Theme Editor. Please note that
+ * manual changes to individual CSS properties may be overwritten by the theme editor.
+ */
+vaadin-horizontal-layout.hello-world-view-horizontal-layout-1 {
+  border-radius:0;
+  border-width:0px;
+  gap:var(--lumo-space-xs);
+  padding:var(--lumo-space-xs);
+}
