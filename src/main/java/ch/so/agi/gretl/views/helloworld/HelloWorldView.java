@@ -63,14 +63,14 @@ public class HelloWorldView extends VerticalLayout {
     @Value("${app.workDirectory}")
     private String workDirectory;
 
-    @Value("${app.githubToken}")
-    private String githubToken;
+    @Value("${platform.owner}")
+    private String platformOwner;
 
-    @Value("${app.githubRepoApiUrl}")
-    private String githubRepoApiUrl;
+    @Value("${platform.token}")
+    private String platformToken;
 
-    @Value("${app.githubRepoActionUrl}")
-    private String githubRepoActionUrl;
+    @Value("${platform.baseUrl}")
+    private String platformBaseUrl;
 
     private FileSystem fileSystem;
     
@@ -149,16 +149,29 @@ public class HelloWorldView extends VerticalLayout {
                 // TODO
             }
             
+            // Ab hier müsste/könnte für weitere Platformen abstrahiert werden.
+            // GUI-Gedöns sollte aber nicht Bestandteil sein, sondern sollte
+            // nur einmal codiert werden.
+            
+            // S3-Base-Url steht auch in Application.java. Sollte besser konfigurierbar sein. Oder mindestens nicht mehrfach.
+            String dataFileKey = key + "/" + fileName;
+            log.info("dataFileKey: " + dataFileKey);
+            
+            System.out.println(dataFileKey.substring(dataFileKey.lastIndexOf("/")+1));
+            
+            
             String payload = """
-                    {"ref":"main","inputs":{"dataFileUrl":"Mona the Octocat"}}
-                    """;
+                    {"ref":"main","inputs":{"dataFileKey":"%s", "directory":"%s", "fileName":"%s"}}
+                    """.formatted(dataFileKey, key, fileName);
+            
+            System.out.println(payload);
             
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(githubRepoApiUrl + "/main.yaml/dispatches"))
+                    .uri(URI.create(createPipelineDispatchUrl("gretljobs-naturgefahren")))
                     .timeout(Duration.ofMinutes(1))
                     .header("Accept", "application/vnd.github+json")
                     .header("X-GitHub-Api-Version", "2022-11-28")
-                    .header("Authorization", "Bearer " + githubToken)
+                    .header("Authorization", "Bearer " + platformToken)
                     .POST(BodyPublishers.ofString(payload))
                     .build();
 
@@ -169,7 +182,7 @@ public class HelloWorldView extends VerticalLayout {
                     responseElement = ElementFactory.createSpan("Could not start ");
                     layoutColumnMiddle.getElement().appendChild(responseElement);
                     
-                    Anchor githubActionLink = new Anchor(githubRepoActionUrl, "GRETL job");
+                    Anchor githubActionLink = new Anchor(createPipelineGuiUrl("gretljobs-naturgefahren"), "GRETL job");
                     githubActionLink.setTarget("_blank");
                     responseElement.appendChild(githubActionLink.getElement());
                 } else {
@@ -205,17 +218,23 @@ public class HelloWorldView extends VerticalLayout {
 
         });
         
-        
         fileUpload
             .getElement()
             .addEventListener(
                     "file-remove",
                     event -> {
                         elemental.json.JsonObject eventData = event.getEventData();
-                        String fileName = eventData.getString("event.detail.file.name");
+                        //String fileName = eventData.getString("event.detail.file.name");
                         responseElement.getParent().removeChild(responseElement);
-                        System.out.println("clear ui");
                     }).addEventData("event.detail.file.name");
+    }
+    
+    private String createPipelineDispatchUrl(String repoName) {
+        return "https://api." + platformBaseUrl + "/repos/" + platformOwner + "/" + repoName + "/actions/workflows/main.yaml/dispatches";
+    }
+    
+    private String createPipelineGuiUrl(String repoName) {
+        return "https://" + platformBaseUrl + "/" + platformOwner + "/" + repoName + "/actions";
     }
 
 }
