@@ -69,6 +69,9 @@ public class HelloWorldView extends VerticalLayout {
     @Value("${app.githubRepoApiUrl}")
     private String githubRepoApiUrl;
 
+    @Value("${app.githubRepoActionUrl}")
+    private String githubRepoActionUrl;
+
     private FileSystem fileSystem;
     
     private HttpClient httpClient = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build();
@@ -86,7 +89,8 @@ public class HelloWorldView extends VerticalLayout {
     
     private Upload fileUpload;
     
-
+    private Element responseElement;
+   
     public HelloWorldView(FileSystem fileSystem) {
         this.fileSystem = (S3FileSystem) fileSystem;
         
@@ -145,11 +149,6 @@ public class HelloWorldView extends VerticalLayout {
                 // TODO
             }
             
-            
-            Element response2 = ElementFactory
-                    .createDiv("Hello!");
-            layoutColumnMiddle.getElement().appendChild(response2);
-
             String payload = """
                     {"ref":"main","inputs":{"dataFileUrl":"Mona the Octocat"}}
                     """;
@@ -164,16 +163,20 @@ public class HelloWorldView extends VerticalLayout {
                     .build();
 
             try {
-                System.out.println(request);
-                System.out.println(request.uri());
-
                 HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
-                System.out.println(response.body());
-
-                Map<String, Object> result = objectMapper.readValue(response.body(), HashMap.class);
-
                 
-                System.out.println(result);
+                if (response.statusCode() != 204) {
+                    responseElement = ElementFactory.createSpan("Could not start ");
+                    layoutColumnMiddle.getElement().appendChild(responseElement);
+                    
+                    Anchor githubActionLink = new Anchor(githubRepoActionUrl, "GRETL job");
+                    githubActionLink.setTarget("_blank");
+                    responseElement.appendChild(githubActionLink.getElement());
+                } else {
+                    
+                }
+                
+                //Map<String, Object> result = objectMapper.readValue(response.body(), HashMap.class);
             
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
@@ -199,26 +202,20 @@ public class HelloWorldView extends VerticalLayout {
             
             
             
-            Anchor githubActionLink = new Anchor("https://github.com/sogis/grextl-natgef", "Natgef GRETL");
-            githubActionLink.setTarget("_blank");
-            layoutColumnMiddle.add(githubActionLink);
 
         });
         
         
         fileUpload
-        .getElement()
-        .addEventListener(
-          "file-remove",
-          event -> {
-             elemental.json.JsonObject eventData = event.getEventData();
-            String fileName = eventData.getString("event.detail.file.name");
-            
-            System.out.println("clear ui");
-            // ...
-          }).addEventData("event.detail.file.name");
-
-        
+            .getElement()
+            .addEventListener(
+                    "file-remove",
+                    event -> {
+                        elemental.json.JsonObject eventData = event.getEventData();
+                        String fileName = eventData.getString("event.detail.file.name");
+                        responseElement.getParent().removeChild(responseElement);
+                        System.out.println("clear ui");
+                    }).addEventData("event.detail.file.name");
     }
 
 }
