@@ -105,7 +105,7 @@ public class HelloWorldView extends VerticalLayout {
         layoutRow.setFlexGrow(1.0, layoutColumnRight);
         layoutColumnRight.setWidth(null);
         
-        h3.setText("GRETL-Jobs-Uploader");        
+        h3.setText("GRETL-Job-Starter");        
         layoutColumnMiddle.add(h3);
 
         handleFileUpload();
