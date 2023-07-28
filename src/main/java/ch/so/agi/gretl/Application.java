@@ -3,6 +3,9 @@ package ch.so.agi.gretl;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.theme.Theme;
 
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -10,9 +13,9 @@ import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.carlspring.cloud.storage.s3fs.S3Factory.ACCESS_KEY;
-import static org.carlspring.cloud.storage.s3fs.S3Factory.SECRET_KEY;
-import static org.carlspring.cloud.storage.s3fs.S3Factory.REGION;
+//import static org.carlspring.cloud.storage.s3fs.S3Factory.ACCESS_KEY;
+//import static org.carlspring.cloud.storage.s3fs.S3Factory.SECRET_KEY;
+//import static org.carlspring.cloud.storage.s3fs.S3Factory.REGION;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -41,17 +44,29 @@ public class Application implements AppShellConfigurator {
 //         return new S3StorageService(s3FileSystem());
 //    }    
     
-    @ConditionalOnProperty(name = "app.storageService", havingValue = "s3", matchIfMissing = false)
+//    @ConditionalOnProperty(name = "app.storageService", havingValue = "s3", matchIfMissing = false)
+//    @Bean
+//    FileSystem s3FileSystem() throws IOException {
+//        Map<String, String> env = new HashMap<>();
+//        env.put(ACCESS_KEY, accessKey);
+//        env.put(SECRET_KEY, secretKey);
+//        env.put(REGION, "eu-central-1");
+//
+//        FileSystem fileSystem = FileSystems.newFileSystem(URI.create("s3://s3-eu-central-1.amazonaws.com/"), env, Thread.currentThread().getContextClassLoader());
+//                
+//        return fileSystem;
+//    }
+    
     @Bean
-    FileSystem s3FileSystem() throws IOException {
-        Map<String, String> env = new HashMap<>();
-        env.put(ACCESS_KEY, accessKey);
-        env.put(SECRET_KEY, secretKey);
-        env.put(REGION, "eu-central-1");
-
-        FileSystem fileSystem = FileSystems.newFileSystem(URI.create("s3://s3-eu-central-1.amazonaws.com/"), env, Thread.currentThread().getContextClassLoader());
+    S3Client s3Client() {
+        System.setProperty("aws.accessKeyId", accessKey);
+        System.setProperty("aws.secretAccessKey", secretKey);
+        
+        Region region = Region.EU_CENTRAL_1;
+        S3Client s3Client = S3Client.builder().region(region).build();
                 
-        return fileSystem;
+        return s3Client;
     }
+
 
 }
