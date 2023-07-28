@@ -9,35 +9,22 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vaadin.flow.component.Composite;
-import com.vaadin.flow.component.Key;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.component.upload.receivers.FileBuffer;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.dom.ElementFactory;
@@ -46,7 +33,6 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
 import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 
 import org.carlspring.cloud.storage.s3fs.S3FileSystem;
 
@@ -57,41 +43,37 @@ import org.slf4j.LoggerFactory;
 @Route(value = "")
 @RouteAlias(value = "")
 @Component
-public class HelloWorldView extends VerticalLayout {
+public class GretlJobStarterView extends VerticalLayout {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-
-    @Value("${app.workDirectory}")
+    
     private String workDirectory;
-
-    @Value("${platform.owner}")
     private String platformOwner;
-
-    @Value("${platform.token}")
     private String platformToken;
-
-    @Value("${platform.baseUrl}")
     private String platformBaseUrl;
 
     private FileSystem fileSystem;
     
     private HttpClient httpClient = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build();
-
-    @Autowired
-    private ObjectMapper objectMapper;
     
     private HorizontalLayout layoutRow = new HorizontalLayout();
 
     private VerticalLayout layoutColumnLeft = new VerticalLayout();
     private VerticalLayout layoutColumnMiddle = new VerticalLayout();
     private VerticalLayout layoutColumnRight = new VerticalLayout();
+    private VerticalLayout layoutColumnSuperRight = new VerticalLayout();
     
     private H3 h3 = new H3();
-    
+    private PasswordField tokenField = new PasswordField();
+    private ComboBox<String> comboBox = new ComboBox<>("GRETL-Job");
     private Upload fileUpload;
-    
     private Element responseElement;
    
-    public HelloWorldView(FileSystem fileSystem) {
+    public GretlJobStarterView(FileSystem fileSystem, Environment env) {
+        this.workDirectory = env.getProperty("app.workDirectory");
+        this.platformOwner = env.getProperty("platform.owner");
+        this.platformToken = env.getProperty("platform.token");
+        this.platformBaseUrl = env.getProperty("platform.baseUrl");
+        
         this.fileSystem = (S3FileSystem) fileSystem;
         
         addClassName(Padding.XLARGE);
@@ -104,24 +86,46 @@ public class HelloWorldView extends VerticalLayout {
         layoutColumnMiddle.addClassName(Gap.XLARGE);
         layoutRow.setFlexGrow(1.0, layoutColumnRight);
         layoutColumnRight.setWidth(null);
-        
+        layoutRow.setFlexGrow(1.0, layoutColumnSuperRight);
+        layoutColumnSuperRight.setWidth(null);
+
         h3.setText("GRETL-Job-Starter");        
         layoutColumnMiddle.add(h3);
+        
+        tokenField.setWidthFull();
+        tokenField.setLabel("Token");
 
+        if (platformToken != null) {
+            tokenField.setValue("A server side token is used.");
+            tokenField.setReadOnly(true);            
+        } else {
+            tokenField.setRequired(true);
+            tokenField.setPlaceholder("Your personal Github token.");
+        }
+        layoutColumnMiddle.add(tokenField);
+        
+        List<String> availableGretlJobs = List.of("gretljobs-naturgefahren");
+        comboBox.setWidthFull();
+        comboBox.setItems(availableGretlJobs);
+        comboBox.setRequired(true);
+        comboBox.setValue(availableGretlJobs.get(0));
+        //comboBox.setItemLabelGenerator(Country::getName);
+        layoutColumnMiddle.add(comboBox);
+        
         handleFileUpload();
         
         layoutRow.add(layoutColumnLeft);
         layoutRow.add(layoutColumnMiddle);
         layoutRow.add(layoutColumnRight);
+        layoutRow.add(layoutColumnSuperRight);
 
         add(layoutRow);
-        
-        
     }
-    
+       
     private void handleFileUpload() {
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         fileUpload = new Upload(memoryBuffer);
+        fileUpload.setWidthFull();
         layoutColumnMiddle.add(fileUpload);
 
         fileUpload.setAutoUpload(false);
@@ -129,7 +133,6 @@ public class HelloWorldView extends VerticalLayout {
 
         int maxFileSizeInBytes = 50 * 1024 * 1024; // 50MB. Muss kleiner sein als in application.properties.
         fileUpload.setMaxFileSize(maxFileSizeInBytes);
-
         
         fileUpload.addSucceededListener(event -> {
             InputStream fileData = memoryBuffer.getInputStream();
@@ -148,74 +151,48 @@ public class HelloWorldView extends VerticalLayout {
                 
                 // TODO
             }
-            
-            // Ab hier müsste/könnte für weitere Platformen abstrahiert werden.
-            // GUI-Gedöns sollte aber nicht Bestandteil sein, sondern sollte
-            // nur einmal codiert werden.
-            
-            // S3-Base-Url steht auch in Application.java. Sollte besser konfigurierbar sein. Oder mindestens nicht mehrfach.
-            String dataFileKey = key + "/" + fileName;
-            log.info("dataFileKey: " + dataFileKey);
-            
-            System.out.println(dataFileKey.substring(dataFileKey.lastIndexOf("/")+1));
-            
-            
+          
             String payload = """
-                    {"ref":"main","inputs":{"dataFileKey":"%s", "directory":"%s", "fileName":"%s"}}
-                    """.formatted(dataFileKey, key, fileName);
+                    {"ref":"main","inputs":{"directory":"%s", "fileName":"%s"}}
+                    """.formatted(key, fileName);
             
-            System.out.println(payload);
-            
+            String gretlJobName = comboBox.getValue();
+
+            if (platformToken == null) {
+                platformToken = tokenField.getValue();
+            }
+                        
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(createPipelineDispatchUrl("gretljobs-naturgefahren")))
+                    .uri(URI.create(createPipelineDispatchUrl(gretlJobName)))
                     .timeout(Duration.ofMinutes(1))
                     .header("Accept", "application/vnd.github+json")
                     .header("X-GitHub-Api-Version", "2022-11-28")
                     .header("Authorization", "Bearer " + platformToken)
                     .POST(BodyPublishers.ofString(payload))
                     .build();
-
+            
             try {
                 HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
                 
                 if (response.statusCode() != 204) {
-                    responseElement = ElementFactory.createSpan("Could not start ");
+                    responseElement = ElementFactory.createDiv();
                     layoutColumnMiddle.getElement().appendChild(responseElement);
                     
-                    Anchor githubActionLink = new Anchor(createPipelineGuiUrl("gretljobs-naturgefahren"), "GRETL job");
-                    githubActionLink.setTarget("_blank");
-                    responseElement.appendChild(githubActionLink.getElement());
-                } else {
+                    responseElement.appendChild(ElementFactory.createDiv("Could not start GRETL job:"));                     
+                    responseElement.appendChild(ElementFactory.createDiv(response.body())); 
                     
+//                    Anchor githubActionLink = new Anchor(createPipelineGuiUrl("gretljobs-naturgefahren"), "GRETL job");
+//                    githubActionLink.setTarget("_blank");
+//                    responseElement.appendChild(githubActionLink.getElement());
+                } else {
+                    getUI().get().getPage().setLocation(createPipelineGuiUrl(gretlJobName));
                 }
-                
-                //Map<String, Object> result = objectMapper.readValue(response.body(), HashMap.class);
-            
+                            
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
                 
                 // TODO
             }
-            
-//            curl -L \
-//            -X POST \
-//            -H "Accept: application/vnd.github+json" \
-//            -H "Authorization: Bearer <YOUR-TOKEN>" \
-//            -H "X-GitHub-Api-Version: 2022-11-28" \
-//            https://api.github.com/repos/OWNER/REPO/actions/workflows/WORKFLOW_ID/dispatches \
-//            -d '{"ref":"topic-branch","inputs":{"name":"Mona the Octocat","home":"San Francisco, CA"}}'
-
-
-//            curl -L \
-//            -H "Accept: application/vnd.github+json" \
-//            -H "Authorization: Bearer <YOUR-TOKEN>" \
-//            -H "X-GitHub-Api-Version: 2022-11-28" \
-//            https://api.github.com/repos/OWNER/REPO/actions/workflows
-
-            
-            
-            
-
         });
         
         fileUpload
@@ -225,7 +202,9 @@ public class HelloWorldView extends VerticalLayout {
                     event -> {
                         elemental.json.JsonObject eventData = event.getEventData();
                         //String fileName = eventData.getString("event.detail.file.name");
-                        responseElement.getParent().removeChild(responseElement);
+                        if (responseElement != null) {
+                            responseElement.getParent().removeChild(responseElement);   
+                        }                        
                     }).addEventData("event.detail.file.name");
     }
     
