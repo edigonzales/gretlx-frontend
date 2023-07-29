@@ -40,11 +40,11 @@ jobs:
           ./mvnw clean package -Pproduction
           ls -la target
 
-      - uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
-          name: reports
-          path: build/reports/tests/
+      # - uses: actions/upload-artifact@v2
+      #   if: ${{ failure() }}
+      #   with:
+      #     name: reports
+      #     path: build/reports/tests/
 
       - name: Set up QEMU for amd64
         uses: docker/setup-qemu-action@v2
@@ -90,9 +90,9 @@ jobs:
           push: ${{ (github.ref == 'refs/heads/main') && (github.event_name != 'pull_request') && !env.ACT }}
           tags: |
             ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:latest
-            ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.VERSION }}
-            ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:0.0
-            ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:0
+            ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.VERSION_MAJOR }}.${{ env.VERSION_MINOR }}.${{ env.BUILD_NUMBER }}
+            ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.VERSION_MAJOR }}.${{ env.VERSION_MINOR }}
+            ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.VERSION_MAJOR }}
           # tags: |
           #   ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:latest
           #   ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.VERSION }}
