@@ -14,7 +14,7 @@ jobs:
       DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}} 
       BUILD_NUMBER: ${{ github.run_number }}
-      VERSION: 0.0.${{ github.run_number }}
+      #VERSION: 0.0.${{ github.run_number }}
       VERSION_MAJOR: "0"
       VERSION_MINOR: "0"
 
@@ -33,13 +33,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
+          cache: 'maven'
 
       - name: Build 
         run: |
-          export TZ="Europe/Zurich"
-          ./gradlew clean build
-          ls -la build/libs
+          ./mvnw clean package -Pproduction
+          ls -la target
 
       - uses: actions/upload-artifact@v2
         if: ${{ failure() }}
@@ -62,7 +61,7 @@ jobs:
           images: ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}
           labels: |
             org.opencontainers.image.title=${{ env.DOCKER_REPO }}
-            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.version=${{ env.VERSION_MAJOR }}.${{ env.VERSION_MINOR }}.${{ env.BUILD_NUMBER }}
             org.opencontainers.image.base.name=docker.io/bellsoft/liberica-openjdk-alpine:17.0.8
 
       - name: Login to Docker Container Registry
