@@ -1,0 +1,18 @@
+FROM bellsoft/alpaquita-linux-base:stream-glibc
+
+ARG UID=1001
+RUN adduser -S gretlx -u $UID
+
+ENV HOME=/app
+WORKDIR $HOME
+
+COPY target/gretlx-frontend ./application
+
+RUN chown $UID:0 . && \
+    chmod 0775 . && \
+    ls -la
+
+USER $UID
+EXPOSE 8080
+ENV LOG4J_FORMAT_MSG_NO_LOOKUPS=true
+CMD ["./application"]
