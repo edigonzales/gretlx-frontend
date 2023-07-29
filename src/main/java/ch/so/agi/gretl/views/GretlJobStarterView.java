@@ -9,9 +9,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpClient.Redirect;
-//import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -40,8 +37,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-//import org.carlspring.cloud.storage.s3fs.S3FileSystem;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +52,6 @@ public class GretlJobStarterView extends VerticalLayout {
     private String platformToken;
     private String platformBaseUrl;
 
-//    private FileSystem fileSystem;
     private S3Client s3Client;
     
     private HttpClient httpClient = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build();
@@ -75,14 +69,12 @@ public class GretlJobStarterView extends VerticalLayout {
     private Upload fileUpload;
     private Element responseElement;
    
-    public GretlJobStarterView(/*FileSystem fileSystem,*/ S3Client s3Client, Environment env) {
+    public GretlJobStarterView(S3Client s3Client, Environment env) {
         this.workDirectory = env.getProperty("app.workDirectory");
         this.platformOwner = env.getProperty("platform.owner");
         this.platformToken = env.getProperty("platform.token");
         this.platformBaseUrl = env.getProperty("platform.baseUrl");
-                
-//        this.fileSystem = (S3FileSystem) fileSystem;
-        
+
         this.s3Client = s3Client;
         
         addClassName(Padding.XLARGE);
@@ -152,9 +144,6 @@ public class GretlJobStarterView extends VerticalLayout {
 
             UUID uuid = UUID.randomUUID();
             String key = uuid.toString();
-
-//            Path workDirectoryPath = fileSystem.getPath(workDirectory);
-//            Path targetPath = workDirectoryPath.resolve(fileSystem.getPath(key, fileName));
                         
             final PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder()
                     .bucket(workDirectory.substring(1))
@@ -164,21 +153,12 @@ public class GretlJobStarterView extends VerticalLayout {
 
             RequestBody requestBody = RequestBody.fromInputStream(fileData, contentLength);
             
-            // TODO: try/catch
             try {
                 s3Client.putObject(requestBuilder.build(), requestBody);                
             } catch (AwsServiceException | SdkClientException e) {
                 // TODO
             }
 
-//            try {
-//                Files.copy(fileData, targetPath);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//                
-//                // TODO
-//            }
-          
             String payload = """
                     {"ref":"main","inputs":{"directory":"%s", "fileName":"%s"}}
                     """.formatted(key, fileName);
