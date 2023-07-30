@@ -15,7 +15,6 @@ jobs:
       DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}} 
       BUILD_NUMBER: ${{ github.run_number }}
-      #VERSION: 0.0.${{ github.run_number }}
       VERSION_MAJOR: "0"
       VERSION_MINOR: "0"
 
@@ -46,10 +45,10 @@ jobs:
       #     name: reports
       #     path: build/reports/tests/
 
-      - name: Set up QEMU for amd64
+      - name: Set up QEMU for amd64 and arm64
         uses: docker/setup-qemu-action@v2
         with:
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
