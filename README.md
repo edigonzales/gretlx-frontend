@@ -71,7 +71,7 @@ Lorem Ipsum...
 
 #### JVM
 ```
-./mvnw clean package -Pproduction`
+./mvnw clean package -Pproduction
 ```
 
 ```

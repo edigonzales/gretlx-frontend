@@ -28,6 +28,7 @@ import com.vaadin.flow.dom.ElementFactory;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
+import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
 import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 @Route(value = "")
 @RouteAlias(value = "")
 @Component
+@UIScope
 public class GretlJobStarterView extends VerticalLayout {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
     
