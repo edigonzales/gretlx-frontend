@@ -105,7 +105,7 @@ public class GretlJobStarterView extends VerticalLayout {
         }
         layoutColumnMiddle.add(tokenField);
         
-        List<String> availableGretlJobs = List.of("gretljobs-naturgefahren");
+        List<String> availableGretlJobs = List.of("gretljobs-demo");
         comboBox.setWidthFull();
         comboBox.setItems(availableGretlJobs);
         comboBox.setRequired(true);
